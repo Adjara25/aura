@@ -1,0 +1,30 @@
+# AURA — .gitignore
+
+# Environment variables (NEVER commit!)
+.env
+.env.local
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node (if using build tools)
+node_modules/
+dist/
+build/
+
+# Temp files
+*.tmp
+*.bak
