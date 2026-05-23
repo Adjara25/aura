@@ -1,0 +1,226 @@
+/* ============================================
+   AURA — Page Layout Wrapper
+   Included in all app pages via components.css
+   ============================================ */
+
+/* Ensure all app pages inherit base layout properly */
+
+/* Loading overlay spin keyframe (used inline) */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Neon text effect for special labels */
+.neon-text {
+  color: var(--violet-light);
+  text-shadow:
+    0 0 7px var(--violet),
+    0 0 10px var(--violet),
+    0 0 21px var(--violet);
+}
+
+/* Frosted glass card variant */
+.card-frosted {
+  background: rgba(20, 20, 48, 0.45);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  border-radius: var(--radius-lg);
+}
+
+/* Scrollable horizontal strip */
+.h-scroll {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.h-scroll::-webkit-scrollbar { display: none; }
+
+/* Section headers inside pages */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.section-link {
+  font-size: 13px;
+  color: var(--violet-light);
+  cursor: pointer;
+  transition: color var(--duration-fast);
+}
+.section-link:hover { color: var(--text-primary); }
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: var(--space-5) 0;
+}
+
+/* Number badge */
+.num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--violet);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 0 8px var(--violet-glow);
+}
+
+/* Pulse dot (live indicator) */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-glow 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* Empty state generic */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  gap: var(--space-3);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  color: var(--text-ghost);
+  margin-bottom: var(--space-2);
+}
+
+.empty-state-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.empty-state-desc {
+  font-size: 14px;
+  max-width: 320px;
+}
+
+/* Error boundary */
+.error-banner {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  color: var(--red);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Inline spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(124, 58, 237, 0.2);
+  border-top-color: var(--violet);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Highlight text */
+mark.highlight {
+  background: rgba(124, 58, 237, 0.25);
+  color: var(--violet-light);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* Truncate text utility */
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Flex utilities */
+.flex        { display: flex; }
+.flex-col    { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.flex-1 { flex: 1; min-width: 0; }
+
+/* Font sizes */
+.text-xs  { font-size: 11px; }
+.text-sm  { font-size: 13px; }
+.text-base { font-size: 14px; }
+.text-lg  { font-size: 16px; }
+.text-xl  { font-size: 20px; }
+
+/* Colors */
+.text-muted    { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+.text-violet   { color: var(--violet-light); }
+.text-green    { color: var(--green); }
+.text-red      { color: var(--red); }
+.text-amber    { color: var(--amber); }
+
+/* Margin utilities */
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 290;
+}
+
+.sidebar-overlay.show {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  /* Show menu toggle in topbar */
+  #menu-toggle {
+    display: flex !important;
+  }
+}
+
+/* Ensure sidebar overlay works */
+@media (max-width: 768px) {
+  .sidebar.open + .sidebar-overlay,
+  .sidebar.open ~ .sidebar-overlay {
+    display: block;
+  }
+}

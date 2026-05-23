@@ -1,0 +1,198 @@
+/* ============================================
+   AURA — Settings Page CSS
+   ============================================ */
+
+.settings-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.settings-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* ---- Section ---- */
+
+.settings-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: fadeIn 0.4s var(--ease-out) both;
+}
+
+.settings-section-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ---- Profile card ---- */
+
+.settings-profile-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.avatar-change-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--violet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  border: 2px solid var(--bg-card);
+  transition: all var(--duration-fast);
+}
+
+.avatar-change-btn:hover {
+  background: var(--violet-light);
+  transform: scale(1.1);
+}
+
+/* ---- Fields ---- */
+
+.settings-fields {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- Rows ---- */
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.settings-row:first-of-type { border-top: none; }
+
+.settings-row-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-row-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.settings-input {
+  max-width: 280px;
+  flex-shrink: 1;
+}
+
+/* ---- Toggle ---- */
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+.toggle-knob {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  transition: all var(--duration-fast);
+}
+
+.toggle-knob::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--text-muted);
+  border-radius: var(--radius-full);
+  top: 2px;
+  left: 2px;
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+
+.toggle-switch input:checked + .toggle-knob {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: var(--violet);
+}
+
+.toggle-switch input:checked + .toggle-knob::before {
+  transform: translateX(20px);
+  background: var(--violet);
+  box-shadow: 0 0 8px var(--violet-glow);
+}
+
+/* ---- Danger zone ---- */
+
+.settings-danger {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.settings-danger .settings-section-title {
+  background: rgba(239, 68, 68, 0.05);
+  border-bottom-color: rgba(239, 68, 68, 0.1);
+}
+
+/* ---- Aura swatches ---- */
+
+.aura-color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all var(--duration-fast);
+}
+
+.aura-color-swatch:hover { transform: scale(1.15); border-color: white; }
+
+.aura-color-swatch.selected {
+  border-color: white;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 600px) {
+  .settings-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .settings-input { max-width: 100%; width: 100%; }
+  .settings-profile-card { flex-direction: column; align-items: flex-start; }
+}

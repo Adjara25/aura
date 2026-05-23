@@ -1,0 +1,28 @@
+/* ============================================
+   AURA — Mobile Sidebar Overlay Fix
+   Injected automatically by layout.js
+   ============================================ */
+
+/* This handles the sidebar backdrop on mobile */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 299;
+  cursor: pointer;
+}
+
+#sidebar-overlay.show {
+  display: block;
+  animation: fadeIn 0.2s ease both;
+}
+
+/* Hamburger menu is always visible on mobile */
+@media (max-width: 768px) {
+  #menu-toggle {
+    display: flex !important;
+  }
+}

@@ -1,0 +1,229 @@
+/* ============================================
+   AURA — CSS Variables & Base Styles
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+
+:root {
+  /* Core Colors */
+  --bg-void:        #050508;
+  --bg-deep:        #09090f;
+  --bg-surface:     #0e0e18;
+  --bg-elevated:    #141424;
+  --bg-card:        #181830;
+  --bg-hover:       #1e1e38;
+
+  /* Neon Accents */
+  --violet:         #7c3aed;
+  --violet-light:   #9d5cf6;
+  --violet-glow:    rgba(124, 58, 237, 0.35);
+  --electric:       #2563eb;
+  --electric-light: #3b82f6;
+  --electric-glow:  rgba(37, 99, 235, 0.3);
+  --cyan:           #06b6d4;
+  --pink:           #ec4899;
+  --green:          #10b981;
+  --amber:          #f59e0b;
+  --red:            #ef4444;
+
+  /* Text */
+  --text-primary:   #f0f0ff;
+  --text-secondary: #a0a0c0;
+  --text-muted:     #606080;
+  --text-ghost:     #303050;
+
+  /* Borders */
+  --border:         rgba(124, 58, 237, 0.15);
+  --border-hover:   rgba(124, 58, 237, 0.4);
+  --border-subtle:  rgba(255, 255, 255, 0.05);
+
+  /* Moods */
+  --mood-dark:      #1a1a2e;
+  --mood-chill:     #06b6d4;
+  --mood-rage:      #ef4444;
+  --mood-focus:     #8b5cf6;
+  --mood-love:      #ec4899;
+  --mood-gym:       #f59e0b;
+  --mood-night:     #312e81;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
+
+  /* Fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+
+  /* Shadows */
+  --shadow-glow-violet: 0 0 20px rgba(124, 58, 237, 0.4), 0 0 60px rgba(124, 58, 237, 0.15);
+  --shadow-glow-blue:   0 0 20px rgba(37, 99, 235, 0.4), 0 0 60px rgba(37, 99, 235, 0.15);
+  --shadow-card:        0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-elevated:    0 16px 48px rgba(0, 0, 0, 0.6);
+
+  /* Transitions */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   400ms;
+
+  /* Layout */
+  --sidebar-width:    260px;
+  --navbar-height:    64px;
+  --player-height:    80px;
+  --mobile-nav-h:     64px;
+  --content-max:      1200px;
+}
+
+/* ============ RESET & BASE ============ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-void);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+}
+
+input, textarea, select {
+  font-family: var(--font-body);
+  outline: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* ============ SCROLLBAR ============ */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--violet);
+  border-radius: var(--radius-full);
+}
+
+/* ============ SELECTION ============ */
+
+::selection {
+  background: var(--violet-glow);
+  color: var(--text-primary);
+}
+
+/* ============ UTILITY CLASSES ============ */
+
+.hidden { display: none !important; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); border: 0;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--violet-light), var(--electric-light), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-violet { box-shadow: var(--shadow-glow-violet); }
+.glow-blue   { box-shadow: var(--shadow-glow-blue); }
+
+.glass {
+  background: rgba(14, 14, 24, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+
+/* ============ ANIMATIONS ============ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px var(--violet-glow); }
+  50%       { box-shadow: 0 0 35px var(--violet-glow), 0 0 60px rgba(124,58,237,0.1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.animate-fadein { animation: fadeIn var(--duration-slow) var(--ease-out) both; }
+.animate-scale  { animation: fadeInScale var(--duration-normal) var(--ease-spring) both; }

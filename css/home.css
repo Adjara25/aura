@@ -1,0 +1,216 @@
+/* ============================================
+   AURA — Home Page CSS
+   ============================================ */
+
+/* ---- Layout ---- */
+
+.home-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-6);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.feed-col { min-width: 0; }
+
+.home-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- Moods bar ---- */
+
+.moods-bar {
+  margin-bottom: var(--space-5);
+}
+
+.moods-bar-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.moods-scroll {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.moods-scroll::-webkit-scrollbar { display: none; }
+
+.mood-pill {
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  color: var(--text-secondary);
+}
+
+.mood-pill:hover {
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.mood-pill.active {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: var(--violet);
+  color: var(--violet-light);
+  box-shadow: 0 0 12px var(--violet-glow);
+}
+
+/* ---- Feed ---- */
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- Feed Empty ---- */
+
+.feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+  gap: var(--space-3);
+}
+
+.feed-empty-icon { font-size: 48px; }
+.feed-empty-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+.feed-empty-desc {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* ---- Post skeleton ---- */
+
+.post-skeleton {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.post-skeleton::before {
+  content: '';
+  display: block;
+  height: 260px;
+  background: linear-gradient(
+    90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ---- Aside card ---- */
+
+.aside-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.aside-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ---- Trending ---- */
+
+.trending-skeleton {
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.trending-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.trending-item:hover { background: var(--bg-elevated); }
+
+.trending-rank {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--text-ghost);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.trending-info { flex: 1; min-width: 0; }
+.trending-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trending-artist {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.trending-plays {
+  font-size: 11px;
+  color: var(--text-ghost);
+}
+
+/* ---- Suggested ---- */
+
+.suggested-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 900px) {
+  .home-layout {
+    grid-template-columns: 1fr;
+  }
+  .home-aside { display: none; }
+}
