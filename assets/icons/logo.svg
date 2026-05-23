@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <defs>
+    <linearGradient id="aura-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9d5cf6"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Sound wave bars (visualizer icon) -->
+  <rect x="10" y="25" width="5" height="10" rx="2.5" fill="url(#aura-grad)" opacity="0.7">
+    <animate attributeName="height" values="10;20;10" dur="1.2s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="25;20;25" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="18" y="18" width="5" height="24" rx="2.5" fill="url(#aura-grad)">
+    <animate attributeName="height" values="24;10;24" dur="1.0s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="18;25;18" dur="1.0s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="26" y="22" width="5" height="16" rx="2.5" fill="url(#aura-grad)" opacity="0.85">
+    <animate attributeName="height" values="16;28;16" dur="1.4s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="22;16;22" dur="1.4s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- AURA text -->
+  <text x="42" y="44" font-family="'Syne', sans-serif" font-weight="800"
+        font-size="36" letter-spacing="-1" fill="url(#aura-grad)" filter="url(#glow)">
+    AURA
+  </text>
+</svg>
