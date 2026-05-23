@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Publier</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/utilities.css">
+  <link rel="stylesheet" href="../css/mobile.css">
+  <link rel="stylesheet" href="../css/upload.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+  <div id="sidebar-mount"></div>
+  <div id="topbar-mount"></div>
+  <div id="mobile-nav-mount"></div>
+  <div id="player-mount"></div>
+  <div id="toast-mount"></div>
+
+  <main class="main-content">
+    <div class="upload-wrap">
+
+      <div class="upload-header">
+        <h1 class="upload-title">Nouveau post <span class="text-gradient">🎵</span></h1>
+        <p class="upload-subtitle">Partage ta musique du moment avec ta communauté</p>
+      </div>
+
+      <div class="upload-layout">
+
+        <!-- Form -->
+        <div class="upload-form-col">
+          <form id="upload-form" novalidate>
+
+            <!-- Song search -->
+            <div class="upload-section">
+              <div class="upload-section-title">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Musique
+              </div>
+              <div class="song-search-wrap">
+                <input type="text" class="form-input" id="song-search"
+                       placeholder="Cherche un titre, artiste..." autocomplete="off">
+                <div class="song-results" id="song-results" style="display:none;"></div>
+              </div>
+
+              <!-- Selected song display -->
+              <div class="selected-song" id="selected-song" style="display:none;">
+                <img id="selected-song-cover" src="" alt="cover" class="selected-song-cover">
+                <div class="selected-song-info">
+                  <div id="selected-song-title" class="selected-song-title">—</div>
+                  <div id="selected-song-artist" class="selected-song-artist">—</div>
+                </div>
+                <button type="button" class="btn-ghost btn-icon" onclick="clearSong()">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </div>
+
+              <!-- Manual entry -->
+              <div class="manual-entry" id="manual-entry">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="form-group">
+                    <label class="form-label">Titre *</label>
+                    <input type="text" class="form-input" id="song-title" placeholder="Titre du morceau">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Artiste *</label>
+                    <input type="text" class="form-input" id="song-artist" placeholder="Nom de l'artiste">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cover Image -->
+            <div class="upload-section">
+              <div class="upload-section-title">
+                <i class="fa-solid fa-image"></i>
+                Image de couverture
+              </div>
+              <div class="cover-upload-zone" id="cover-zone">
+                <input type="file" id="cover-file" accept="image/*" style="display:none;">
+                <div class="cover-upload-placeholder" id="cover-placeholder">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <div>Glisse une image ou <span style="color:var(--violet-light);cursor:pointer;" onclick="document.getElementById('cover-file').click()">clique pour choisir</span></div>
+                  <div style="font-size:12px;color:var(--text-muted);">PNG, JPG, WEBP — max 5 Mo</div>
+                </div>
+                <img id="cover-preview" src="" alt="preview" style="display:none;">
+                <button type="button" id="cover-remove" onclick="removeCover()"
+                        style="display:none;position:absolute;top:8px;right:8px;" class="btn btn-ghost btn-icon">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Caption -->
+            <div class="upload-section">
+              <div class="upload-section-title">
+                <i class="fa-solid fa-comment"></i>
+                Caption
+              </div>
+              <textarea class="form-input" id="caption" placeholder="Décris ton mood, tes émotions..." rows="3"
+                        maxlength="280" oninput="updateCharCount()"></textarea>
+              <div style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">
+                <span id="char-count">0</span>/280
+              </div>
+            </div>
+
+            <!-- Mood -->
+            <div class="upload-section">
+              <div class="upload-section-title">
+                <i class="fa-solid fa-palette"></i>
+                Mood du post
+              </div>
+              <div class="mood-grid" id="mood-grid">
+                <!-- Generated by JS -->
+              </div>
+            </div>
+
+            <!-- Audio upload — REQUIS pour la lecture -->
+            <div class="upload-section" style="border-color: rgba(124,58,237,0.3);">
+              <div class="upload-section-title">
+                <i class="fa-solid fa-waveform-lines" style="color:var(--violet-light);"></i>
+                Fichier audio
+                <span style="background:rgba(124,58,237,0.2);color:var(--violet-light);
+                             font-size:10px;padding:2px 8px;border-radius:20px;margin-left:4px;">
+                  REQUIS pour la lecture
+                </span>
+              </div>
+              <div class="audio-upload-zone" id="audio-zone"
+                   onclick="document.getElementById('audio-file').click()"
+                   style="cursor:pointer;">
+                <input type="file" id="audio-file" accept="audio/mp3,audio/mpeg,audio/wav,audio/ogg,audio/*" style="display:none;">
+                <div class="audio-placeholder" id="audio-placeholder">
+                  <i class="fa-solid fa-music" style="color:var(--violet-light);font-size:22px;"></i>
+                  <span>Clique pour uploader un MP3 / WAV / OGG</span>
+                  <span style="font-size:11px;color:var(--text-muted);">Sans audio, le bouton ▶ ne jouera rien</span>
+                </div>
+                <div id="audio-selected" style="display:none;" class="audio-selected-info">
+                  <i class="fa-solid fa-file-audio" style="color:var(--violet-light);font-size:20px;"></i>
+                  <span id="audio-filename" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+                  <span id="audio-duration" style="font-size:11px;color:var(--text-muted);flex-shrink:0;"></span>
+                  <button type="button" class="btn-ghost btn-icon" onclick="event.stopPropagation();removeAudio()">
+                    <i class="fa-solid fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="upload-actions">
+              <button type="button" class="btn btn-ghost" onclick="window.location.href='home.html'">
+                Annuler
+              </button>
+              <button type="submit" class="btn btn-primary btn-lg" id="publish-btn">
+                <i class="fa-solid fa-paper-plane"></i>
+                Publier
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Preview -->
+        <div class="upload-preview-col">
+          <div class="preview-label">Aperçu</div>
+          <div class="preview-card" id="preview-card">
+            <div class="preview-header">
+              <img id="prev-avatar" src="" alt="avatar" class="avatar avatar-md">
+              <div>
+                <div id="prev-username" style="font-weight:600;font-size:14px;">Toi</div>
+                <div class="mood-badge" id="prev-mood" style="margin-top:4px;">🌑 Dark</div>
+              </div>
+            </div>
+            <div class="preview-cover-wrap" id="prev-cover-wrap">
+              <div class="preview-cover-placeholder" id="prev-cover-ph">
+                <i class="fa-solid fa-image"></i>
+                <span>Aperçu de la couverture</span>
+              </div>
+              <img id="prev-cover" src="" alt="cover" style="display:none;width:100%;height:100%;object-fit:cover;">
+              <div class="preview-song-overlay" id="prev-song-overlay" style="display:none;">
+                <div>
+                  <div id="prev-song-title" style="font-weight:700;font-size:15px;"></div>
+                  <div id="prev-song-artist" style="font-size:12px;color:var(--text-secondary);"></div>
+                </div>
+                <div style="width:40px;height:40px;border-radius:50%;background:var(--violet);
+                            display:flex;align-items:center;justify-content:center;
+                            box-shadow:0 0 16px var(--violet-glow);">
+                  <i class="fa-solid fa-play"></i>
+                </div>
+              </div>
+            </div>
+            <div id="prev-caption" style="padding:12px 16px;font-size:13px;color:var(--text-secondary);display:none;"></div>
+            <div class="preview-footer">
+              <span style="color:var(--text-muted);"><i class="fa-regular fa-heart"></i> 0</span>
+              <span style="color:var(--text-muted);"><i class="fa-regular fa-comment"></i> 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+  let currentUserId  = null;
+  let selectedMood   = 'dark';
+  let coverFile      = null;
+  let audioFile      = null;
+  let selectedSong   = null;
+
+  /* ---------- INIT ---------- */
+
+  (async () => {
+    const session = await Layout.init({ page: 'upload' });
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    const profile = await Auth.getCurrentProfile();
+    if (profile) {
+      document.getElementById('prev-avatar').src     = getAvatarUrl(profile);
+      document.getElementById('prev-username').textContent = profile.display_name || profile.username;
+      selectedMood = profile.current_mood || 'dark';
+    }
+
+    renderMoodGrid();
+  })();
+
+  /* ---------- MOOD GRID ---------- */
+
+  function renderMoodGrid() {
+    const grid = document.getElementById('mood-grid');
+    grid.innerHTML = Object.entries(MOODS).map(([key, cfg]) => `
+      <div class="mood-option ${key === selectedMood ? 'active' : ''}"
+           data-mood="${key}" onclick="selectMood('${key}')">
+        <i class="fa-solid ${cfg.icon}"></i>
+        <span>${cfg.label}</span>
+      </div>
+    `).join('');
+    updatePreviewMood();
+  }
+
+  function selectMood(mood) {
+    selectedMood = mood;
+    document.querySelectorAll('.mood-option').forEach(el => {
+      el.classList.toggle('active', el.dataset.mood === mood);
+    });
+    updatePreviewMood();
+  }
+
+  function updatePreviewMood() {
+    const cfg   = getMoodConfig(selectedMood);
+    const badge = document.getElementById('prev-mood');
+    badge.className   = `mood-badge mood-${selectedMood}`;
+    badge.innerHTML   = `<i class="fa-solid ${cfg.icon}"></i> ${cfg.label}`;
+  }
+
+  /* ---------- SONG SEARCH ---------- */
+
+  const searchInput = document.getElementById('song-search');
+  const resultsEl   = document.getElementById('song-results');
+
+  // Demo songs for search (in production, query Supabase songs table or Spotify API)
+  const DEMO_SONGS = [
+    { title: 'Blinding Lights', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80' },
+    { title: 'Levitating', artist: 'Dua Lipa', cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80' },
+    { title: 'Montero', artist: 'Lil Nas X', cover: 'https://images.unsplash.com/photo-1487537708073-aa096503b083?w=300&q=80' },
+    { title: 'Peaches', artist: 'Justin Bieber', cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&q=80' },
+    { title: 'Stay', artist: 'Kid LAROI', cover: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=300&q=80' },
+    { title: 'drivers license', artist: 'Olivia Rodrigo', cover: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=300&q=80' },
+    { title: 'good 4 u', artist: 'Olivia Rodrigo', cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80' },
+    { title: 'Heat Waves', artist: 'Glass Animals', cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80' },
+  ];
+
+  searchInput.addEventListener('input', debounce(() => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { resultsEl.style.display = 'none'; return; }
+
+    const matches = DEMO_SONGS.filter(s =>
+      s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
+    );
+
+    if (!matches.length) {
+      resultsEl.innerHTML = `<div style="padding:12px;color:var(--text-muted);font-size:13px;">
+        Aucun résultat. Remplis manuellement ci-dessous.
+      </div>`;
+    } else {
+      resultsEl.innerHTML = matches.map(s => `
+        <div class="song-result-item" onclick="selectSong(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+          <img src="${s.cover}" alt="cover" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">${s.title}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${s.artist}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    resultsEl.style.display = 'block';
+  }, 200));
+
+  function selectSong(song) {
+    selectedSong = song;
+    resultsEl.style.display = 'none';
+    searchInput.value = '';
+
+    document.getElementById('selected-song-cover').src = song.cover || '';
+    document.getElementById('selected-song-title').textContent  = song.title;
+    document.getElementById('selected-song-artist').textContent = song.artist;
+    document.getElementById('selected-song').style.display = 'flex';
+    document.getElementById('manual-entry').style.display  = 'none';
+
+    // Update preview
+    document.getElementById('prev-song-title').textContent  = song.title;
+    document.getElementById('prev-song-artist').textContent = song.artist;
+    document.getElementById('prev-song-overlay').style.display = 'flex';
+
+    // Set cover if not already chosen
+    if (!coverFile && song.cover) {
+      document.getElementById('prev-cover').src = song.cover;
+      document.getElementById('prev-cover').style.display = 'block';
+      document.getElementById('prev-cover-ph').style.display = 'none';
+    }
+
+    document.getElementById('song-title').value  = song.title;
+    document.getElementById('song-artist').value = song.artist;
+  }
+
+  function clearSong() {
+    selectedSong = null;
+    document.getElementById('selected-song').style.display = 'none';
+    document.getElementById('manual-entry').style.display  = 'block';
+    document.getElementById('prev-song-overlay').style.display = 'none';
+    document.getElementById('song-title').value  = '';
+    document.getElementById('song-artist').value = '';
+  }
+
+  // Close results on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.song-search-wrap')) resultsEl.style.display = 'none';
+  });
+
+  /* ---------- COVER UPLOAD ---------- */
+
+  const coverInput = document.getElementById('cover-file');
+  const coverZone  = document.getElementById('cover-zone');
+
+  // Drag & drop
+  coverZone.addEventListener('dragover', e => { e.preventDefault(); coverZone.classList.add('drag-over'); });
+  coverZone.addEventListener('dragleave', () => coverZone.classList.remove('drag-over'));
+  coverZone.addEventListener('drop', e => {
+    e.preventDefault();
+    coverZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleCoverFile(file);
+  });
+
+  coverZone.addEventListener('click', e => {
+    if (e.target.closest('#cover-remove')) return;
+    coverInput.click();
+  });
+
+  coverInput.addEventListener('change', () => {
+    if (coverInput.files[0]) handleCoverFile(coverInput.files[0]);
+  });
+
+  function handleCoverFile(file) {
+    if (file.size > 5 * 1024 * 1024) { Toast.error('Image trop lourde (max 5 Mo).'); return; }
+    coverFile = file;
+    const url = URL.createObjectURL(file);
+
+    document.getElementById('cover-placeholder').style.display = 'none';
+    const preview = document.getElementById('cover-preview');
+    preview.src = url;
+    preview.style.display = 'block';
+    document.getElementById('cover-remove').style.display = 'flex';
+
+    // Sync to post preview
+    document.getElementById('prev-cover').src = url;
+    document.getElementById('prev-cover').style.display = 'block';
+    document.getElementById('prev-cover-ph').style.display = 'none';
+  }
+
+  function removeCover() {
+    coverFile = null;
+    coverInput.value = '';
+    document.getElementById('cover-placeholder').style.display = 'flex';
+    document.getElementById('cover-preview').style.display = 'none';
+    document.getElementById('cover-remove').style.display = 'none';
+    document.getElementById('prev-cover').style.display = 'none';
+    document.getElementById('prev-cover-ph').style.display = 'flex';
+  }
+
+  /* ---------- AUDIO UPLOAD ---------- */
+
+  document.getElementById('audio-file').addEventListener('change', function () {
+    if (!this.files[0]) return;
+    audioFile = this.files[0];
+
+    // Afficher le nom
+    document.getElementById('audio-filename').textContent = audioFile.name;
+    document.getElementById('audio-placeholder').style.display = 'none';
+    document.getElementById('audio-selected').style.display    = 'flex';
+
+    // Lire la durée via l'API Audio
+    const url = URL.createObjectURL(audioFile);
+    const audio = new Audio(url);
+    audio.addEventListener('loadedmetadata', () => {
+      const dur = audio.duration;
+      document.getElementById('audio-duration').textContent =
+        isFinite(dur) ? formatDuration(dur) : '';
+      URL.revokeObjectURL(url);
+    });
+  });
+
+  function removeAudio() {
+    audioFile = null;
+    document.getElementById('audio-file').value = '';
+    document.getElementById('audio-placeholder').style.display = 'flex';
+    document.getElementById('audio-selected').style.display = 'none';
+  }
+
+  /* ---------- CAPTION PREVIEW ---------- */
+
+  document.getElementById('caption').addEventListener('input', function() {
+    const prevCaption = document.getElementById('prev-caption');
+    if (this.value.trim()) {
+      prevCaption.textContent = this.value;
+      prevCaption.style.display = 'block';
+    } else {
+      prevCaption.style.display = 'none';
+    }
+  });
+
+  function updateCharCount() {
+    const val = document.getElementById('caption').value;
+    document.getElementById('char-count').textContent = val.length;
+  }
+
+  /* ---------- SUBMIT ---------- */
+
+  document.getElementById('upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('publish-btn');
+
+    const songTitle  = document.getElementById('song-title').value.trim();
+    const songArtist = document.getElementById('song-artist').value.trim();
+    const caption    = document.getElementById('caption').value.trim();
+
+    if (!songTitle && !caption) {
+      Toast.error('Ajoute au moins un titre ou une caption.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publication...';
+
+    try {
+      const sb = getSupabase();
+      let coverUrl = selectedSong?.cover || null;
+      let audioUrl = null;
+
+      // Upload cover
+      if (coverFile) {
+        const ext  = coverFile.name.split('.').pop();
+        const path = `covers/${currentUserId}/${Date.now()}.${ext}`;
+        const { error: upErr } = await sb.storage.from('media').upload(path, coverFile);
+        if (!upErr) {
+          const { data } = sb.storage.from('media').getPublicUrl(path);
+          coverUrl = data.publicUrl;
+        }
+      }
+
+      // Upload audio
+      if (audioFile) {
+        const ext  = audioFile.name.split('.').pop();
+        const path = `audio/${currentUserId}/${Date.now()}.${ext}`;
+        const { error: auErr } = await sb.storage.from('media').upload(path, audioFile);
+        if (!auErr) {
+          const { data } = sb.storage.from('media').getPublicUrl(path);
+          audioUrl = data.publicUrl;
+        }
+      }
+
+      const post = {
+        user_id:     currentUserId,
+        song_title:  songTitle  || null,
+        song_artist: songArtist || null,
+        caption:     caption    || null,
+        cover_url:   coverUrl,
+        audio_url:   audioUrl,
+        mood:        selectedMood,
+      };
+
+      await DB.createPost(post);
+      Toast.success('Post publié ! 🎵');
+
+      setTimeout(() => { window.location.href = 'home.html'; }, 1200);
+    } catch (err) {
+      Toast.error('Erreur : ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier';
+    }
+  });
+  </script>
+</body>
+</html>

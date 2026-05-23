@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Profil</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/utilities.css">
+  <link rel="stylesheet" href="../css/mobile.css">
+  <link rel="stylesheet" href="../css/profile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+  <div id="sidebar-mount"></div>
+  <div id="topbar-mount"></div>
+  <div id="mobile-nav-mount"></div>
+  <div id="player-mount"></div>
+  <div id="toast-mount"></div>
+
+  <main class="main-content" id="main">
+    <div class="profile-wrap">
+
+      <!-- Banner -->
+      <div class="profile-banner" id="profile-banner">
+        <div class="profile-banner-overlay"></div>
+        <div class="profile-banner-actions" id="banner-actions"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="profile-header">
+        <div class="profile-avatar-wrap">
+          <img id="profile-avatar" src="" alt="avatar" class="profile-avatar">
+          <div class="profile-aura-ring" id="aura-ring"></div>
+        </div>
+
+        <div class="profile-info">
+          <div class="profile-names">
+            <h1 class="profile-display-name" id="profile-display-name">...</h1>
+            <div class="profile-username" id="profile-username">@...</div>
+          </div>
+          <div class="profile-meta-row">
+            <div class="mood-badge" id="profile-mood-badge">...</div>
+            <div class="profile-fav-song" id="profile-fav-song"></div>
+          </div>
+          <div class="profile-bio" id="profile-bio"></div>
+          <div class="profile-stats">
+            <div class="profile-stat" onclick="showFollowersModal()">
+              <span class="profile-stat-val" id="stat-followers">0</span>
+              <span class="profile-stat-label">Followers</span>
+            </div>
+            <div class="profile-stat" onclick="showFollowingModal()">
+              <span class="profile-stat-val" id="stat-following">0</span>
+              <span class="profile-stat-label">Following</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat-val" id="stat-posts">0</span>
+              <span class="profile-stat-label">Posts</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-actions" id="profile-actions"></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="profile-tabs">
+        <div class="profile-tab active" data-tab="posts">
+          <i class="fa-solid fa-grid-2"></i> Posts
+        </div>
+        <div class="profile-tab" data-tab="playlists">
+          <i class="fa-solid fa-layer-group"></i> Playlists
+        </div>
+        <div class="profile-tab" data-tab="likes">
+          <i class="fa-regular fa-heart"></i> Likes
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div id="tab-posts" class="tab-content active">
+        <div id="posts-grid" class="posts-grid">
+          <div class="post-skeleton"></div>
+          <div class="post-skeleton"></div>
+          <div class="post-skeleton"></div>
+        </div>
+        <div id="posts-empty" style="display:none;text-align:center;padding:48px 0;color:var(--text-muted);">
+          Aucun post pour l'instant.
+        </div>
+      </div>
+
+      <div id="tab-playlists" class="tab-content" style="display:none;">
+        <div id="playlists-grid" class="playlists-grid">
+          <div class="trending-skeleton" style="height:160px;border-radius:12px;"></div>
+          <div class="trending-skeleton" style="height:160px;border-radius:12px;"></div>
+        </div>
+        <div id="playlists-empty" style="display:none;text-align:center;padding:48px 0;color:var(--text-muted);">
+          Aucune playlist pour l'instant.
+        </div>
+      </div>
+
+      <div id="tab-likes" class="tab-content" style="display:none;">
+        <div id="likes-list" style="color:var(--text-muted);text-align:center;padding:48px 0;">
+          Connexion requise pour voir les likes.
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-overlay" id="edit-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Modifier le profil</div>
+        <div class="modal-close" onclick="closeEditModal()">
+          <i class="fa-solid fa-times"></i>
+        </div>
+      </div>
+      <div class="modal-body">
+        <form id="edit-form" style="display:flex;flex-direction:column;gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Prénom / Nom affiché</label>
+            <input type="text" class="form-input" id="edit-display-name" placeholder="Ton nom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea class="form-input" id="edit-bio" placeholder="Parle de toi..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Musique favorite</label>
+            <input type="text" class="form-input" id="edit-fav-song" placeholder="Ex: Blinding Lights – The Weeknd">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Couleur d'aura</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="aura-colors"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mood actuel</label>
+            <select class="form-input" id="edit-mood">
+              <option value="dark">🌑 Dark</option>
+              <option value="chill">❄️ Chill</option>
+              <option value="rage">🔥 Rage</option>
+              <option value="focus">🎯 Focus</option>
+              <option value="love">💜 Love</option>
+              <option value="gym">💪 Gym</option>
+              <option value="night">⭐ Night</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Photo de profil</label>
+            <input type="file" class="form-input" id="edit-avatar" accept="image/*" style="padding:8px;">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeEditModal()">Annuler</button>
+        <button class="btn btn-primary" id="save-profile-btn" onclick="saveProfile()">
+          <i class="fa-solid fa-check"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+  const AURA_COLORS = [
+    '#7c3aed','#2563eb','#06b6d4','#ec4899',
+    '#ef4444','#f59e0b','#10b981','#8b5cf6',
+  ];
+
+  let currentUserId  = null;
+  let profileUserId  = null;
+  let isOwnProfile   = false;
+  let profileData    = null;
+  let selectedAuraColor = '#7c3aed';
+
+  (async () => {
+    const session = await Layout.init({ page: 'profile' });
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    const params = getParams();
+    profileUserId = params.id || currentUserId;
+    isOwnProfile  = profileUserId === currentUserId;
+
+    await loadProfile();
+    await Promise.all([loadPosts(), loadPlaylists()]);
+    setupTabs();
+    renderAuraColorPicker();
+  })();
+
+  async function loadProfile() {
+    try {
+      profileData = await DB.getProfile(profileUserId);
+    } catch {
+      // Demo data
+      profileData = {
+        id: profileUserId,
+        username: 'user',
+        display_name: 'Utilisateur',
+        bio: 'Passionné de musique.',
+        current_mood: 'dark',
+        aura_color: '#7c3aed',
+        favorite_song: 'Blinding Lights — The Weeknd',
+        avatar_url: null,
+        followers_count: [{ count: 0 }],
+        following_count: [{ count: 0 }],
+        posts_count: [{ count: 0 }],
+      };
+    }
+
+    renderProfileHeader(profileData);
+  }
+
+  function renderProfileHeader(p) {
+    const moodCfg = getMoodConfig(p.current_mood);
+    const auraColor = p.aura_color || '#7c3aed';
+
+    // Banner gradient based on mood
+    document.getElementById('profile-banner').style.background =
+      `linear-gradient(135deg, ${auraColor}22, ${moodCfg.color}11, var(--bg-deep))`;
+
+    // Avatar
+    document.getElementById('profile-avatar').src = getAvatarUrl(p);
+
+    // Aura ring
+    const ring = document.getElementById('aura-ring');
+    ring.style.setProperty('--aura-col', auraColor);
+
+    // Names
+    document.getElementById('profile-display-name').textContent = p.display_name || p.username;
+    document.getElementById('profile-username').textContent = `@${p.username}`;
+
+    // Mood badge
+    const badge = document.getElementById('profile-mood-badge');
+    badge.className = `mood-badge mood-${p.current_mood || 'dark'}`;
+    badge.innerHTML = `<i class="fa-solid ${moodCfg.icon}"></i> ${moodCfg.label}`;
+
+    // Fav song
+    if (p.favorite_song) {
+      document.getElementById('profile-fav-song').innerHTML =
+        `<i class="fa-solid fa-music" style="color:var(--violet-light);"></i> ${p.favorite_song}`;
+    }
+
+    // Bio
+    document.getElementById('profile-bio').textContent = p.bio || '';
+
+    // Stats
+    document.getElementById('stat-followers').textContent =
+      formatCount(p.followers_count?.[0]?.count ?? 0);
+    document.getElementById('stat-following').textContent =
+      formatCount(p.following_count?.[0]?.count ?? 0);
+    document.getElementById('stat-posts').textContent =
+      formatCount(p.posts_count?.[0]?.count ?? 0);
+
+    // Actions
+    const actionsEl = document.getElementById('profile-actions');
+    if (isOwnProfile) {
+      actionsEl.innerHTML = `
+        <button class="btn btn-outline" onclick="openEditModal()">
+          <i class="fa-solid fa-pen"></i> Modifier
+        </button>
+      `;
+      document.getElementById('banner-actions').innerHTML = '';
+    } else {
+      renderFollowBtn(actionsEl);
+    }
+  }
+
+  async function renderFollowBtn(container) {
+    const isFollowing = await DB.isFollowing(currentUserId, profileUserId);
+    container.innerHTML = `
+      <button class="btn ${isFollowing ? 'btn-outline' : 'btn-primary'}"
+              id="follow-btn" onclick="handleFollow()">
+        <i class="fa-solid ${isFollowing ? 'fa-user-check' : 'fa-user-plus'}"></i>
+        ${isFollowing ? 'Suivi' : 'Suivre'}
+      </button>
+      <button class="btn btn-ghost btn-icon" title="Message">
+        <i class="fa-solid fa-comment"></i>
+      </button>
+    `;
+  }
+
+  async function handleFollow() {
+    const btn = document.getElementById('follow-btn');
+    const isFollowing = btn.textContent.includes('Suivi');
+    try {
+      if (isFollowing) await DB.unfollowUser(currentUserId, profileUserId);
+      else             await DB.followUser(currentUserId, profileUserId);
+      await renderFollowBtn(document.getElementById('profile-actions'));
+    } catch (err) {
+      Toast.error('Erreur lors du follow.');
+    }
+  }
+
+  /* ---- Posts ---- */
+
+  async function loadPosts() {
+    try {
+      const posts = await DB.getPostsByUser(profileUserId);
+      const grid  = document.getElementById('posts-grid');
+      if (!posts.length) {
+        grid.style.display = 'none';
+        document.getElementById('posts-empty').style.display = 'block';
+        return;
+      }
+      grid.innerHTML = posts.map((post, i) => `
+        <div class="post-grid-item" style="animation-delay:${i * 0.05}s;"
+             onclick="Player.load({title:'${post.song_title || ''}',artist:'${post.song_artist || ''}',coverUrl:'${getCoverUrl(post.cover_url, i)}'})">
+          <img src="${getCoverUrl(post.cover_url, i)}" alt="cover" loading="lazy">
+          <div class="post-grid-overlay">
+            <div class="post-grid-title">${post.song_title || post.caption || '—'}</div>
+            <div class="post-grid-meta">
+              <i class="fa-solid fa-heart"></i> ${formatCount(post.likes_count?.[0]?.count ?? 0)}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      document.getElementById('posts-grid').style.display = 'none';
+      document.getElementById('posts-empty').style.display = 'block';
+    }
+  }
+
+  /* ---- Playlists ---- */
+
+  async function loadPlaylists() {
+    try {
+      const playlists = await DB.getPlaylists(profileUserId);
+      const grid = document.getElementById('playlists-grid');
+      if (!playlists.length) {
+        grid.style.display = 'none';
+        document.getElementById('playlists-empty').style.display = 'block';
+        return;
+      }
+      grid.innerHTML = playlists.map(pl => `
+        <div class="playlist-card" onclick="window.location.href='playlist.html?id=${pl.id}'">
+          <div class="playlist-card-cover">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="playlist-card-info">
+            <div class="playlist-card-name">${pl.name}</div>
+            <div class="playlist-card-meta">
+              ${pl.songs_count?.[0]?.count ?? 0} morceaux
+              ${pl.is_public ? '' : '<i class="fa-solid fa-lock"></i>'}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch { /* ignore */ }
+  }
+
+  /* ---- Tabs ---- */
+
+  function setupTabs() {
+    document.querySelectorAll('.profile-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        tab.classList.add('active');
+        document.getElementById(`tab-${tab.dataset.tab}`).style.display = 'block';
+      });
+    });
+  }
+
+  /* ---- Edit Profile ---- */
+
+  function renderAuraColorPicker() {
+    const el = document.getElementById('aura-colors');
+    el.innerHTML = AURA_COLORS.map(c => `
+      <div class="aura-color-swatch ${c === selectedAuraColor ? 'selected' : ''}"
+           style="background:${c};" data-color="${c}"
+           onclick="selectAuraColor('${c}')"></div>
+    `).join('');
+  }
+
+  function selectAuraColor(color) {
+    selectedAuraColor = color;
+    document.querySelectorAll('.aura-color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.dataset.color === color);
+    });
+  }
+
+  function openEditModal() {
+    if (!profileData) return;
+    document.getElementById('edit-display-name').value = profileData.display_name || '';
+    document.getElementById('edit-bio').value          = profileData.bio || '';
+    document.getElementById('edit-fav-song').value     = profileData.favorite_song || '';
+    document.getElementById('edit-mood').value         = profileData.current_mood || 'dark';
+    selectedAuraColor = profileData.aura_color || '#7c3aed';
+    renderAuraColorPicker();
+    document.getElementById('edit-modal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+  }
+
+  async function saveProfile() {
+    const btn = document.getElementById('save-profile-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sauvegarde...';
+
+    try {
+      const updates = {
+        display_name:  document.getElementById('edit-display-name').value.trim(),
+        bio:           document.getElementById('edit-bio').value.trim(),
+        favorite_song: document.getElementById('edit-fav-song').value.trim(),
+        current_mood:  document.getElementById('edit-mood').value,
+        aura_color:    selectedAuraColor,
+      };
+
+      // Avatar upload
+      const avatarFile = document.getElementById('edit-avatar').files[0];
+      if (avatarFile) {
+        const url = await DB.uploadAvatar(currentUserId, avatarFile);
+        updates.avatar_url = url;
+      }
+
+      profileData = await DB.updateProfile(currentUserId, updates);
+      Auth.clearCache();
+      renderProfileHeader(profileData);
+      await Layout.populateUser();
+      closeEditModal();
+      Toast.success('Profil mis à jour !');
+    } catch (err) {
+      Toast.error('Erreur : ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Enregistrer';
+  }
+
+  // Close modals on overlay click
+  document.getElementById('edit-modal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('edit-modal')) closeEditModal();
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Recherche</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/utilities.css">
+  <link rel="stylesheet" href="../css/mobile.css">
+  <link rel="stylesheet" href="../css/search.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+  <div id="sidebar-mount"></div>
+  <div id="topbar-mount"></div>
+  <div id="mobile-nav-mount"></div>
+  <div id="player-mount"></div>
+  <div id="toast-mount"></div>
+
+  <main class="main-content">
+    <div class="search-wrap">
+
+      <!-- Search bar -->
+      <div class="search-bar-wrap">
+        <i class="fa-solid fa-magnifying-glass search-bar-icon"></i>
+        <input type="text" id="search-input" class="search-bar-input"
+               placeholder="Artistes, titres, playlists..."
+               autocomplete="off" autofocus>
+        <div id="search-clear" class="search-clear" style="display:none;" onclick="clearSearch()">
+          <i class="fa-solid fa-times"></i>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="search-tabs">
+        <div class="search-tab active" data-tab="users">
+          <i class="fa-solid fa-users"></i> Personnes
+        </div>
+        <div class="search-tab" data-tab="playlists">
+          <i class="fa-solid fa-layer-group"></i> Playlists
+        </div>
+        <div class="search-tab" data-tab="songs">
+          <i class="fa-solid fa-music"></i> Musiques
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="tab-users" class="search-results-section active">
+        <div id="users-results" class="search-results-grid"></div>
+        <div id="users-empty" class="search-empty" style="display:none;">
+          <i class="fa-solid fa-user-slash"></i>
+          <span>Aucun utilisateur trouvé</span>
+        </div>
+      </div>
+
+      <div id="tab-playlists" class="search-results-section" style="display:none;">
+        <div id="playlists-results" class="search-results-list"></div>
+        <div id="playlists-empty" class="search-empty" style="display:none;">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Aucune playlist trouvée</span>
+        </div>
+      </div>
+
+      <div id="tab-songs" class="search-results-section" style="display:none;">
+        <div id="songs-results" class="search-results-list"></div>
+        <div id="songs-empty" class="search-empty" style="display:none;">
+          <i class="fa-solid fa-music"></i>
+          <span>Aucune musique trouvée</span>
+        </div>
+      </div>
+
+      <!-- Discover (shown when no query) -->
+      <div id="discover" class="discover-section">
+        <div class="discover-title">
+          <i class="fa-solid fa-compass"></i> Explorer
+        </div>
+
+        <div class="discover-grid" id="discover-moods">
+          <!-- Mood cards -->
+        </div>
+
+        <div class="discover-subtitle">Personnes à suivre</div>
+        <div id="discover-users" class="search-results-grid">
+          <!-- Suggested users -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+  let currentUserId = null;
+  let activeTab     = 'users';
+
+  (async () => {
+    const session = await Layout.init({ page: 'search' });
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    // Check URL param from topbar search
+    const { q } = getParams();
+    if (q) {
+      document.getElementById('search-input').value = q;
+      performSearch(q);
+      document.getElementById('discover').style.display = 'none';
+      document.getElementById('search-clear').style.display = 'flex';
+    } else {
+      loadDiscover();
+    }
+
+    setupTabs();
+  })();
+
+  /* ---------- TABS ---------- */
+
+  function setupTabs() {
+    document.querySelectorAll('.search-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.search-results-section').forEach(s => s.style.display = 'none');
+        tab.classList.add('active');
+        activeTab = tab.dataset.tab;
+        document.getElementById(`tab-${activeTab}`).style.display = 'block';
+
+        const q = document.getElementById('search-input').value.trim();
+        if (q) performSearch(q);
+      });
+    });
+  }
+
+  /* ---------- SEARCH ---------- */
+
+  const searchInput = document.getElementById('search-input');
+
+  searchInput.addEventListener('input', debounce(async () => {
+    const q = searchInput.value.trim();
+    document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
+
+    if (!q) {
+      clearResults();
+      document.getElementById('discover').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('discover').style.display = 'none';
+    performSearch(q);
+  }, 350));
+
+  async function performSearch(q) {
+    if (activeTab === 'users')     await searchUsers(q);
+    if (activeTab === 'playlists') await searchPlaylists(q);
+    if (activeTab === 'songs')     await searchSongs(q);
+  }
+
+  function clearSearch() {
+    searchInput.value = '';
+    document.getElementById('search-clear').style.display = 'none';
+    clearResults();
+    document.getElementById('discover').style.display = 'block';
+  }
+
+  function clearResults() {
+    ['users', 'playlists', 'songs'].forEach(t => {
+      document.getElementById(`${t}-results`).innerHTML = '';
+      document.getElementById(`${t}-empty`).style.display = 'none';
+    });
+  }
+
+  /* ---------- USERS ---------- */
+
+  async function searchUsers(q) {
+    const el    = document.getElementById('users-results');
+    const empty = document.getElementById('users-empty');
+    el.innerHTML = getSearchSkeletons(4, 'user');
+
+    try {
+      const users = await DB.searchUsers(q);
+      if (!users.length) {
+        el.innerHTML = '';
+        empty.style.display = 'flex';
+        return;
+      }
+      empty.style.display = 'none';
+      el.innerHTML = users.map(u => renderUserCard(u)).join('');
+    } catch {
+      el.innerHTML = '';
+      empty.style.display = 'flex';
+    }
+  }
+
+  function renderUserCard(u) {
+    const moodCfg = getMoodConfig(u.current_mood);
+    return `
+    <div class="user-card" onclick="window.location.href='profile.html?id=${u.id}'">
+      <div class="user-card-avatar-wrap">
+        <img src="${getAvatarUrl(u)}" class="avatar avatar-lg" alt="${u.username}">
+        <div class="user-card-mood-dot" style="background:${moodCfg.color};box-shadow:0 0 6px ${moodCfg.color};"></div>
+      </div>
+      <div class="user-card-name">${u.display_name || u.username}</div>
+      <div class="user-card-handle">@${u.username}</div>
+      ${u.bio ? `<div class="user-card-bio">${u.bio.slice(0, 50)}${u.bio.length > 50 ? '...' : ''}</div>` : ''}
+      <div class="mood-badge mood-${u.current_mood || 'dark'}" style="margin-top:6px;">
+        <i class="fa-solid ${moodCfg.icon}"></i> ${moodCfg.label}
+      </div>
+    </div>`;
+  }
+
+  /* ---------- PLAYLISTS ---------- */
+
+  async function searchPlaylists(q) {
+    const el    = document.getElementById('playlists-results');
+    const empty = document.getElementById('playlists-empty');
+    el.innerHTML = getSearchSkeletons(3, 'list');
+
+    try {
+      const playlists = await DB.searchPlaylists(q);
+      if (!playlists.length) {
+        el.innerHTML = '';
+        empty.style.display = 'flex';
+        return;
+      }
+      empty.style.display = 'none';
+      el.innerHTML = playlists.map(pl => `
+        <div class="list-result-item" onclick="window.location.href='playlist.html?id=${pl.id}'">
+          <div class="list-result-icon" style="background:linear-gradient(135deg,var(--violet),var(--electric));">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="list-result-info">
+            <div class="list-result-title">${pl.name}</div>
+            <div class="list-result-sub">
+              par @${pl.profile?.username || '—'} •
+              ${pl.songs_count?.[0]?.count ?? 0} morceaux
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-ghost);"></i>
+        </div>
+      `).join('');
+    } catch {
+      el.innerHTML = '';
+      empty.style.display = 'flex';
+    }
+  }
+
+  /* ---------- SONGS ---------- */
+
+  async function searchSongs(q) {
+    const el    = document.getElementById('songs-results');
+    const empty = document.getElementById('songs-empty');
+    el.innerHTML = getSearchSkeletons(3, 'list');
+
+    try {
+      const songs = await DB.searchSongs(q);
+      if (!songs.length) {
+        el.innerHTML = '';
+        empty.style.display = 'flex';
+        return;
+      }
+      empty.style.display = 'none';
+      el.innerHTML = songs.map(s => `
+        <div class="list-result-item" onclick="Player.load({title:'${s.title}',artist:'${s.artist}',coverUrl:'${s.cover_url||''}',audioUrl:'${s.audio_url||''}'})">
+          <div class="list-result-icon" style="background:var(--bg-elevated);">
+            ${s.cover_url
+              ? `<img src="${s.cover_url}" style="width:100%;height:100%;object-fit:cover;">`
+              : `<i class="fa-solid fa-music" style="color:var(--violet-light);"></i>`}
+          </div>
+          <div class="list-result-info">
+            <div class="list-result-title">${s.title}</div>
+            <div class="list-result-sub">${s.artist} ${s.album ? '• ' + s.album : ''}</div>
+          </div>
+          <div class="player-btn" style="width:36px;height:36px;border-radius:50%;background:var(--violet);display:flex;align-items:center;justify-content:center;">
+            <i class="fa-solid fa-play" style="font-size:12px;"></i>
+          </div>
+        </div>
+      `).join('');
+    } catch {
+      el.innerHTML = '';
+      empty.style.display = 'flex';
+    }
+  }
+
+  /* ---------- DISCOVER ---------- */
+
+  async function loadDiscover() {
+    // Mood cards
+    const moodsEl = document.getElementById('discover-moods');
+    moodsEl.innerHTML = Object.entries(MOODS).map(([key, cfg]) => `
+      <div class="mood-discover-card" style="--mood-col:${cfg.color};"
+           onclick="searchByMood('${key}')">
+        <i class="fa-solid ${cfg.icon}"></i>
+        <span>${cfg.label}</span>
+      </div>
+    `).join('');
+
+    // Suggested users
+    try {
+      const users = await DB.searchUsers('', { limit: 6 });
+      const discoverUsers = document.getElementById('discover-users');
+      discoverUsers.innerHTML = users
+        .filter(u => u.id !== currentUserId)
+        .slice(0, 6)
+        .map(u => renderUserCard(u))
+        .join('');
+    } catch { /* ignore */ }
+  }
+
+  function searchByMood(mood) {
+    document.getElementById('discover').style.display = 'none';
+    // Switch to users tab and show users with this mood
+    document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-tab="users"]').classList.add('active');
+    document.querySelectorAll('.search-results-section').forEach(s => s.style.display = 'none');
+    document.getElementById('tab-users').style.display = 'block';
+    activeTab = 'users';
+
+    // Render filtered users (demo: show all with mood label)
+    document.getElementById('search-input').value = MOODS[mood].label;
+    document.getElementById('search-clear').style.display = 'flex';
+    searchUsers(MOODS[mood].label);
+  }
+
+  /* ---------- SKELETON LOADERS ---------- */
+
+  function getSearchSkeletons(n, type) {
+    if (type === 'user') {
+      return Array(n).fill(0).map(() => `
+        <div class="user-card">
+          <div class="skeleton" style="width:60px;height:60px;border-radius:50%;margin:0 auto 8px;"></div>
+          <div class="skeleton" style="height:14px;width:70%;margin:0 auto 4px;"></div>
+          <div class="skeleton" style="height:11px;width:50%;margin:0 auto;"></div>
+        </div>
+      `).join('');
+    }
+    return Array(n).fill(0).map(() => `
+      <div class="list-result-item" style="pointer-events:none;">
+        <div class="skeleton list-result-icon"></div>
+        <div style="flex:1;">
+          <div class="skeleton" style="height:14px;width:60%;margin-bottom:6px;"></div>
+          <div class="skeleton" style="height:11px;width:40%;"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+  </script>
+</body>
+</html>

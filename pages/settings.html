@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Réglages</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/utilities.css">
+  <link rel="stylesheet" href="../css/mobile.css">
+  <link rel="stylesheet" href="../css/settings.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+  <div id="sidebar-mount"></div>
+  <div id="topbar-mount"></div>
+  <div id="mobile-nav-mount"></div>
+  <div id="player-mount"></div>
+  <div id="toast-mount"></div>
+
+  <main class="main-content">
+    <div class="settings-wrap">
+
+      <h1 class="settings-title">Réglages</h1>
+
+      <!-- Profile Section -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <i class="fa-solid fa-user"></i> Mon profil
+        </div>
+
+        <div class="settings-profile-card">
+          <div style="position:relative;width:80px;flex-shrink:0;">
+            <img id="s-avatar" src="" alt="avatar" class="avatar avatar-xl">
+            <label for="s-avatar-input" class="avatar-change-btn">
+              <i class="fa-solid fa-camera"></i>
+            </label>
+            <input type="file" id="s-avatar-input" accept="image/*" style="display:none;">
+          </div>
+          <div style="flex:1;">
+            <div id="s-display-name" style="font-family:var(--font-display);font-size:20px;font-weight:700;"></div>
+            <div id="s-username"     style="color:var(--text-muted);font-size:14px;"></div>
+            <div id="s-email"        style="color:var(--text-ghost);font-size:12px;margin-top:4px;"></div>
+          </div>
+        </div>
+
+        <div class="settings-fields">
+          <div class="settings-row">
+            <div class="settings-row-label">Prénom affiché</div>
+            <input type="text" class="form-input settings-input" id="s-field-displayname" placeholder="Ton nom">
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label">Bio</div>
+            <textarea class="form-input settings-input" id="s-field-bio" rows="2" placeholder="Parle de toi..."></textarea>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label">Musique favorite</div>
+            <input type="text" class="form-input settings-input" id="s-field-favsong" placeholder="Titre — Artiste">
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label">Mood actuel</div>
+            <select class="form-input settings-input" id="s-field-mood">
+              <option value="dark">🌑 Dark</option>
+              <option value="chill">❄️ Chill</option>
+              <option value="rage">🔥 Rage</option>
+              <option value="focus">🎯 Focus</option>
+              <option value="love">💜 Love</option>
+              <option value="gym">💪 Gym</option>
+              <option value="night">⭐ Night</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button class="btn btn-primary" id="save-profile-btn" onclick="saveProfile()">
+            <i class="fa-solid fa-check"></i> Sauvegarder
+          </button>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <i class="fa-solid fa-palette"></i> Apparence
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Couleur d'aura</div>
+            <div class="settings-row-sub">Personnalise la couleur de ta ringure</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" id="s-aura-colors"></div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Effets de glow</div>
+            <div class="settings-row-sub">Désactiver les effets lumineux néon</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-glow" checked onchange="toggleGlow(this.checked)">
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <i class="fa-solid fa-shield-halved"></i> Compte
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Changer le mot de passe</div>
+            <div class="settings-row-sub">Un email de réinitialisation sera envoyé</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="resetPassword()">
+            Envoyer l'email
+          </button>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Email de notification</div>
+            <div class="settings-row-sub">Recevoir les notifications par email</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-notif" checked>
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Profil public</div>
+            <div class="settings-row-sub">Permettre à tout le monde de voir ton profil</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-public" checked>
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="settings-section settings-danger">
+        <div class="settings-section-title" style="color:var(--red);">
+          <i class="fa-solid fa-triangle-exclamation"></i> Zone de danger
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Se déconnecter</div>
+            <div class="settings-row-sub">Terminer la session sur cet appareil</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="Auth.logout()" style="border-color:var(--red);color:var(--red);">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Déconnexion
+          </button>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label" style="color:var(--red);">Supprimer mon compte</div>
+            <div class="settings-row-sub">Action irréversible — toutes tes données seront effacées</div>
+          </div>
+          <button class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3);"
+                  onclick="confirmDeleteAccount()">
+            Supprimer
+          </button>
+        </div>
+      </div>
+
+      <!-- Version -->
+      <div style="text-align:center;color:var(--text-ghost);font-size:11px;padding:24px 0;">
+        AURA v1.0.0 — Your Musical Identity
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+  const AURA_COLORS = [
+    '#7c3aed','#2563eb','#06b6d4','#ec4899',
+    '#ef4444','#f59e0b','#10b981','#8b5cf6',
+  ];
+
+  let currentUserId = null;
+  let profileData   = null;
+  let selectedAuraColor = '#7c3aed';
+  let pendingAvatarFile = null;
+
+  (async () => {
+    const session = await Layout.init({ page: 'settings' });
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    const [profile] = await Promise.all([Auth.getCurrentProfile()]);
+    if (!profile) return;
+
+    profileData = profile;
+    populateForm(profile);
+    renderAuraColors();
+  })();
+
+  function populateForm(p) {
+    document.getElementById('s-avatar').src              = getAvatarUrl(p);
+    document.getElementById('s-display-name').textContent = p.display_name || p.username;
+    document.getElementById('s-username').textContent     = `@${p.username}`;
+
+    // Email from auth
+    Auth.getCurrentUser().then(user => {
+      if (user) document.getElementById('s-email').textContent = user.email;
+    });
+
+    document.getElementById('s-field-displayname').value = p.display_name  || '';
+    document.getElementById('s-field-bio').value         = p.bio           || '';
+    document.getElementById('s-field-favsong').value     = p.favorite_song || '';
+    document.getElementById('s-field-mood').value        = p.current_mood  || 'dark';
+    selectedAuraColor = p.aura_color || '#7c3aed';
+  }
+
+  function renderAuraColors() {
+    const el = document.getElementById('s-aura-colors');
+    el.innerHTML = AURA_COLORS.map(c => `
+      <div class="aura-color-swatch ${c === selectedAuraColor ? 'selected' : ''}"
+           style="background:${c};" data-color="${c}"
+           onclick="selectAuraColor('${c}')"></div>
+    `).join('');
+  }
+
+  function selectAuraColor(color) {
+    selectedAuraColor = color;
+    document.querySelectorAll('.aura-color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.dataset.color === color);
+    });
+  }
+
+  // Avatar change
+  document.getElementById('s-avatar-input').addEventListener('change', function() {
+    if (!this.files[0]) return;
+    pendingAvatarFile = this.files[0];
+    document.getElementById('s-avatar').src = URL.createObjectURL(pendingAvatarFile);
+  });
+
+  async function saveProfile() {
+    const btn = document.getElementById('save-profile-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sauvegarde...';
+
+    try {
+      const updates = {
+        display_name:  document.getElementById('s-field-displayname').value.trim(),
+        bio:           document.getElementById('s-field-bio').value.trim(),
+        favorite_song: document.getElementById('s-field-favsong').value.trim(),
+        current_mood:  document.getElementById('s-field-mood').value,
+        aura_color:    selectedAuraColor,
+      };
+
+      if (pendingAvatarFile) {
+        const url = await DB.uploadAvatar(currentUserId, pendingAvatarFile);
+        updates.avatar_url = url;
+        pendingAvatarFile = null;
+      }
+
+      profileData = await DB.updateProfile(currentUserId, updates);
+      Auth.clearCache();
+      await Layout.populateUser();
+
+      document.getElementById('s-display-name').textContent = profileData.display_name || profileData.username;
+      Toast.success('Profil mis à jour ! ✨');
+    } catch (err) {
+      Toast.error('Erreur : ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Sauvegarder';
+  }
+
+  async function resetPassword() {
+    try {
+      const user = await Auth.getCurrentUser();
+      if (!user) return;
+      const sb = getSupabase();
+      await sb.auth.resetPasswordForEmail(user.email);
+      Toast.success('Email de réinitialisation envoyé !');
+    } catch (err) {
+      Toast.error('Erreur : ' + err.message);
+    }
+  }
+
+  function toggleGlow(enabled) {
+    if (!enabled) {
+      document.documentElement.style.setProperty('--shadow-glow-violet', 'none');
+      document.documentElement.style.setProperty('--shadow-glow-blue', 'none');
+    } else {
+      document.documentElement.style.removeProperty('--shadow-glow-violet');
+      document.documentElement.style.removeProperty('--shadow-glow-blue');
+    }
+    Toast.info(`Effets de glow ${enabled ? 'activés' : 'désactivés'}`);
+  }
+
+  function confirmDeleteAccount() {
+    const confirmed = confirm(
+      'Es-tu sûr(e) de vouloir supprimer ton compte ? Cette action est irréversible.'
+    );
+    if (confirmed) {
+      Toast.error('Fonctionnalité à implémenter côté backend Supabase.');
+    }
+  }
+  </script>
+</body>
+</html>

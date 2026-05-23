@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Playlists</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/utilities.css">
+  <link rel="stylesheet" href="../css/mobile.css">
+  <link rel="stylesheet" href="../css/playlist.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+  <div id="sidebar-mount"></div>
+  <div id="topbar-mount"></div>
+  <div id="mobile-nav-mount"></div>
+  <div id="player-mount"></div>
+  <div id="toast-mount"></div>
+
+  <main class="main-content">
+    <div id="view-library" class="playlist-wrap">
+
+      <div class="playlist-page-header">
+        <div>
+          <h1 class="playlist-page-title">Ma bibliothèque <span class="text-gradient">🎵</span></h1>
+          <p style="color:var(--text-muted);font-size:14px;">Tes playlists et collections</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <i class="fa-solid fa-plus"></i> Nouvelle playlist
+        </button>
+      </div>
+
+      <!-- Playlists grid -->
+      <div id="playlists-grid" class="playlists-page-grid">
+        <!-- Loading skeletons -->
+        <div class="playlist-skeleton"></div>
+        <div class="playlist-skeleton"></div>
+        <div class="playlist-skeleton"></div>
+        <div class="playlist-skeleton"></div>
+      </div>
+
+      <div id="playlists-empty" style="display:none;" class="playlists-empty">
+        <i class="fa-solid fa-layer-group"></i>
+        <div class="playlists-empty-title">Aucune playlist</div>
+        <p style="color:var(--text-muted);font-size:14px;">Crée ta première playlist maintenant</p>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <i class="fa-solid fa-plus"></i> Créer une playlist
+        </button>
+      </div>
+    </div>
+
+    <!-- Playlist detail view -->
+    <div id="view-detail" style="display:none;" class="playlist-wrap">
+      <button class="btn btn-ghost" onclick="backToLibrary()" style="margin-bottom:16px;">
+        <i class="fa-solid fa-arrow-left"></i> Retour
+      </button>
+
+      <div class="playlist-detail-header">
+        <div class="playlist-detail-cover">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div class="playlist-detail-info">
+          <div class="playlist-detail-label">PLAYLIST</div>
+          <h1 class="playlist-detail-name" id="detail-name">...</h1>
+          <div class="playlist-detail-meta">
+            <img id="detail-avatar" src="" alt="avatar" class="avatar avatar-sm">
+            <span id="detail-owner">...</span>
+            <span style="color:var(--text-ghost);">•</span>
+            <span id="detail-count" style="color:var(--text-muted);">0 morceaux</span>
+          </div>
+          <div id="detail-desc" style="color:var(--text-secondary);font-size:13px;margin-top:8px;"></div>
+          <div class="playlist-detail-actions" id="detail-actions">
+            <button class="btn btn-primary" id="detail-play-btn">
+              <i class="fa-solid fa-play"></i> Lecture
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Songs list -->
+      <div id="songs-list" class="songs-list"></div>
+      <div id="songs-empty" style="display:none;text-align:center;padding:48px;color:var(--text-muted);">
+        Cette playlist est vide. Ajoute des morceaux !
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Create Playlist Modal -->
+  <div class="modal-overlay" id="create-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Nouvelle playlist</div>
+        <div class="modal-close" onclick="closeCreateModal()">
+          <i class="fa-solid fa-times"></i>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" class="form-input" id="pl-name" placeholder="Nom de ta playlist" maxlength="60">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="pl-desc" placeholder="Décris ta playlist..." rows="2"></textarea>
+          </div>
+          <label class="auth-check-group">
+            <input type="checkbox" id="pl-public" checked>
+            <span class="auth-check-label">Playlist publique</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeCreateModal()">Annuler</button>
+        <button class="btn btn-primary" id="create-pl-btn" onclick="createPlaylist()">
+          <i class="fa-solid fa-plus"></i> Créer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+  let currentUserId = null;
+  let currentPlaylistId = null;
+  let currentPlaylistSongs = [];
+
+  (async () => {
+    const session = await Layout.init({ page: 'playlist' });
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    const { id } = getParams();
+    if (id) {
+      await loadPlaylistDetail(id);
+    } else {
+      await loadPlaylists();
+    }
+  })();
+
+  /* ---------- LIBRARY ---------- */
+
+  async function loadPlaylists() {
+    document.getElementById('view-library').style.display = 'block';
+    document.getElementById('view-detail').style.display  = 'none';
+
+    try {
+      const playlists = await DB.getPlaylists(currentUserId);
+      renderPlaylists(playlists);
+    } catch {
+      renderPlaylists([]);
+    }
+  }
+
+  function renderPlaylists(playlists) {
+    const grid  = document.getElementById('playlists-grid');
+    const empty = document.getElementById('playlists-empty');
+
+    if (!playlists.length) {
+      grid.style.display  = 'none';
+      empty.style.display = 'flex';
+      return;
+    }
+
+    grid.style.display  = 'grid';
+    empty.style.display = 'none';
+    grid.innerHTML = playlists.map((pl, i) => `
+      <div class="playlist-card-page" style="animation-delay:${i * 0.07}s;"
+           onclick="loadPlaylistDetail('${pl.id}')">
+        <div class="playlist-card-page-cover" style="background:linear-gradient(135deg,
+          hsl(${(i * 47 + 250) % 360},60%,35%), hsl(${(i * 47 + 200) % 360},70%,25%))">
+          <i class="fa-solid fa-music"></i>
+        </div>
+        <div class="playlist-card-page-body">
+          <div class="playlist-card-page-name">${pl.name}</div>
+          <div class="playlist-card-page-meta">
+            ${pl.songs_count?.[0]?.count ?? 0} morceaux
+            ${pl.is_public
+              ? '<span style="color:var(--green);"><i class="fa-solid fa-globe"></i> Public</span>'
+              : '<span style="color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Privé</span>'}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-icon playlist-play-icon"
+                onclick="event.stopPropagation();playPlaylist('${pl.id}')">
+          <i class="fa-solid fa-play"></i>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  /* ---------- DETAIL ---------- */
+
+  async function loadPlaylistDetail(playlistId) {
+    currentPlaylistId = playlistId;
+    document.getElementById('view-library').style.display = 'none';
+    document.getElementById('view-detail').style.display  = 'block';
+
+    document.getElementById('songs-list').innerHTML = `
+      <div style="text-align:center;padding:32px;color:var(--text-muted);">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;"></i>
+      </div>`;
+
+    try {
+      const pl = await DB.getPlaylist(playlistId);
+
+      document.getElementById('detail-name').textContent  = pl.name;
+      document.getElementById('detail-desc').textContent  = pl.description || '';
+      document.getElementById('detail-owner').textContent = pl.profile?.display_name || pl.profile?.username || '—';
+      document.getElementById('detail-avatar').src        = getAvatarUrl(pl.profile);
+
+      const songs = (pl.playlist_songs || []).map(ps => ps.song).filter(Boolean);
+      currentPlaylistSongs = songs;
+      document.getElementById('detail-count').textContent = `${songs.length} morceau${songs.length > 1 ? 'x' : ''}`;
+
+      // Play all button
+      document.getElementById('detail-play-btn').onclick = () => {
+        if (songs.length) playTrack(songs[0]);
+      };
+
+      renderSongs(songs);
+    } catch (err) {
+      document.getElementById('songs-list').innerHTML = `
+        <div style="text-align:center;padding:32px;color:var(--text-muted);">
+          Impossible de charger la playlist.
+        </div>`;
+    }
+  }
+
+  function renderSongs(songs) {
+    const list  = document.getElementById('songs-list');
+    const empty = document.getElementById('songs-empty');
+
+    if (!songs.length) {
+      list.innerHTML      = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    list.innerHTML = songs.map((s, i) => `
+      <div class="song-row" onclick="playTrack(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+        <div class="song-row-num">${i + 1}</div>
+        <div class="song-row-cover">
+          ${s.cover_url
+            ? `<img src="${s.cover_url}" style="width:100%;height:100%;object-fit:cover;">`
+            : `<i class="fa-solid fa-music" style="color:var(--violet-light);"></i>`}
+        </div>
+        <div class="song-row-info">
+          <div class="song-row-title">${s.title}</div>
+          <div class="song-row-artist">${s.artist}</div>
+        </div>
+        ${s.duration ? `<div class="song-row-duration">${formatDuration(s.duration)}</div>` : ''}
+        <div class="song-row-actions">
+          <button class="btn-ghost btn-icon" onclick="event.stopPropagation();removeSong('${s.id}')" title="Retirer">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function playTrack(song) {
+    Player.load({
+      title:    song.title,
+      artist:   song.artist,
+      coverUrl: song.cover_url,
+      audioUrl: song.audio_url,
+    });
+  }
+
+  async function playPlaylist(playlistId) {
+    try {
+      const pl = await DB.getPlaylist(playlistId);
+      const songs = (pl.playlist_songs || []).map(ps => ps.song).filter(Boolean);
+      if (songs.length) playTrack(songs[0]);
+    } catch { /* ignore */ }
+  }
+
+  async function removeSong(songId) {
+    if (!currentPlaylistId) return;
+    try {
+      await DB.removeSongFromPlaylist(currentPlaylistId, songId);
+      currentPlaylistSongs = currentPlaylistSongs.filter(s => s.id !== songId);
+      renderSongs(currentPlaylistSongs);
+      Toast.success('Morceau retiré.');
+    } catch {
+      Toast.error('Erreur lors de la suppression.');
+    }
+  }
+
+  function backToLibrary() {
+    history.replaceState(null, '', 'playlist.html');
+    loadPlaylists();
+  }
+
+  /* ---------- CREATE ---------- */
+
+  function openCreateModal()  { document.getElementById('create-modal').style.display = 'flex'; }
+  function closeCreateModal() { document.getElementById('create-modal').style.display = 'none'; }
+
+  async function createPlaylist() {
+    const btn  = document.getElementById('create-pl-btn');
+    const name = document.getElementById('pl-name').value.trim();
+    const desc = document.getElementById('pl-desc').value.trim();
+    const pub  = document.getElementById('pl-public').checked;
+
+    if (!name) { Toast.error('Donne un nom à ta playlist.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    try {
+      await DB.createPlaylist({ userId: currentUserId, name, description: desc, isPublic: pub });
+      closeCreateModal();
+      Toast.success('Playlist créée ! 🎉');
+      document.getElementById('pl-name').value = '';
+      document.getElementById('pl-desc').value = '';
+      await loadPlaylists();
+    } catch (err) {
+      Toast.error('Erreur : ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-plus"></i> Créer';
+  }
+
+  document.getElementById('create-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('create-modal')) closeCreateModal();
+  });
+  </script>
+</body>
+</html>

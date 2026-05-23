@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>AURA — Connexion</title>
+
+  <!-- Fonts first -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/auth.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="auth-page">
+
+  <!-- Ambient background -->
+  <div class="auth-bg">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-grid"></div>
+  </div>
+
+  <div class="auth-container">
+
+    <!-- Left (desktop only) -->
+    <div class="auth-panel auth-left">
+      <div>
+        <div class="auth-logo">AURA</div>
+        <div class="auth-slogan">Your Musical Identity</div>
+      </div>
+      <div class="auth-features">
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-music"></i></div>
+          <div>
+            <div class="auth-feature-title">Exprime ton aura</div>
+            <div class="auth-feature-desc">Chaque mood change ton identité visuelle</div>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <div class="auth-feature-title">Connecte-toi</div>
+            <div class="auth-feature-desc">Rejoins des milliers de music lovers</div>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-headphones"></i></div>
+          <div>
+            <div class="auth-feature-title">Partage ta musique</div>
+            <div class="auth-feature-desc">Posts, playlists, et découvertes</div>
+          </div>
+        </div>
+      </div>
+      <div class="auth-testimonial">
+        <div class="auth-testimonial-quote">"AURA a changé ma façon de partager ma musique."</div>
+        <div class="auth-testimonial-author">— Yasmine K., 23 ans</div>
+      </div>
+    </div>
+
+    <!-- Right — Form -->
+    <div class="auth-panel auth-right">
+      <div class="auth-form-wrap">
+
+        <!-- Mobile logo -->
+        <div class="auth-form-logo">AURA</div>
+
+        <h1 class="auth-title">Bon retour 👋</h1>
+        <p class="auth-subtitle">Connecte-toi à ton espace musical</p>
+
+        <form class="auth-form" id="login-form" novalidate>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label class="form-label" for="email">Email</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-envelope input-icon"></i>
+              <input
+                type="email"
+                id="email"
+                class="input-with-icon"
+                placeholder="ton@email.com"
+                autocomplete="email"
+                inputmode="email"
+                required
+              >
+            </div>
+          </div>
+
+          <!-- Mot de passe -->
+          <div class="form-group">
+            <label class="form-label" for="password">Mot de passe</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input
+                type="password"
+                id="password"
+                class="input-with-icon"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              >
+              <!-- Eye toggle sits inside the input -->
+              <button type="button" class="input-toggle" id="toggle-pw" aria-label="Afficher le mot de passe">
+                <i class="fa-solid fa-eye" id="eye-icon"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Error message -->
+          <div id="login-error" class="auth-error" style="display:none;"></div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn-full" id="login-btn">
+            <span>Se connecter</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+
+          <div class="auth-divider"><span>ou</span></div>
+
+          <div class="auth-switch">
+            Pas encore de compte ?
+            <a href="register.html" class="auth-link">Créer un compte</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /auth-container -->
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    Auth.redirectIfLoggedIn();
+
+    /* ---- Toggle password visibility ---- */
+    const toggleBtn = document.getElementById('toggle-pw');
+    const pwInput   = document.getElementById('password');
+    const eyeIcon   = document.getElementById('eye-icon');
+
+    toggleBtn.addEventListener('click', function () {
+      const isHidden = pwInput.type === 'password';
+      pwInput.type   = isHidden ? 'text' : 'password';
+      eyeIcon.className = isHidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+
+    /* ---- Form submit ---- */
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn      = document.getElementById('login-btn');
+      const errorEl  = document.getElementById('login-error');
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      errorEl.style.display = 'none';
+
+      if (!email || !password) {
+        errorEl.textContent   = 'Remplis tous les champs.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      // Loading state
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Connexion...</span>';
+
+      try {
+        await Auth.login({ email, password });
+        btn.innerHTML = '<i class="fa-solid fa-check"></i><span>Connecté !</span>';
+        setTimeout(() => { window.location.href = 'home.html'; }, 600);
+      } catch (err) {
+        const msg = err.message || '';
+        errorEl.textContent = msg.includes('Invalid login')
+          ? 'Email ou mot de passe incorrect.'
+          : msg || 'Erreur de connexion.';
+        errorEl.style.display = 'block';
+
+        btn.disabled  = false;
+        btn.innerHTML = '<span>Se connecter</span><i class="fa-solid fa-arrow-right"></i>';
+      }
+    });
+  </script>
+</body>
+</html>

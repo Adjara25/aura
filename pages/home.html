@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Home</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/utilities.css">
+  <link rel="stylesheet" href="../css/mobile.css">
+  <link rel="stylesheet" href="../css/home.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+
+  <!-- Layout mounts -->
+  <div id="sidebar-mount"></div>
+  <div id="topbar-mount"></div>
+  <div id="mobile-nav-mount"></div>
+  <div id="player-mount"></div>
+  <div id="toast-mount"></div>
+
+  <!-- Main content -->
+  <main class="main-content" id="main">
+
+    <div class="home-layout">
+
+      <!-- Feed -->
+      <div class="feed-col">
+
+        <!-- Stories / Moods bar -->
+        <div class="moods-bar">
+          <div class="moods-bar-label">Moods du moment</div>
+          <div class="moods-scroll">
+            <div class="mood-pill active" data-mood="all">Tout</div>
+            <div class="mood-pill" data-mood="dark">🌑 Dark</div>
+            <div class="mood-pill" data-mood="chill">❄️ Chill</div>
+            <div class="mood-pill" data-mood="rage">🔥 Rage</div>
+            <div class="mood-pill" data-mood="focus">🎯 Focus</div>
+            <div class="mood-pill" data-mood="love">💜 Love</div>
+            <div class="mood-pill" data-mood="gym">💪 Gym</div>
+            <div class="mood-pill" data-mood="night">⭐ Night</div>
+          </div>
+        </div>
+
+        <!-- Posts feed -->
+        <div id="feed" class="feed">
+          <!-- Skeletons while loading -->
+          <div class="post-skeleton"></div>
+          <div class="post-skeleton"></div>
+          <div class="post-skeleton"></div>
+        </div>
+
+        <div id="feed-empty" class="feed-empty" style="display:none;">
+          <div class="feed-empty-icon">🎵</div>
+          <div class="feed-empty-title">Aucun post ici</div>
+          <div class="feed-empty-desc">Suis des artistes ou publie ta première musique !</div>
+          <a href="upload.html" class="btn btn-primary" style="margin-top:16px;">
+            <i class="fa-solid fa-circle-plus"></i> Publier
+          </a>
+        </div>
+
+        <!-- Load more -->
+        <div id="load-more-wrap" style="text-align:center;padding:24px 0;display:none;">
+          <button class="btn btn-outline" id="load-more-btn">
+            <i class="fa-solid fa-arrow-down"></i> Voir plus
+          </button>
+        </div>
+      </div>
+
+      <!-- Right sidebar (desktop) -->
+      <div class="home-aside">
+
+        <!-- Trending section -->
+        <div class="aside-card">
+          <div class="aside-title">
+            <i class="fa-solid fa-fire" style="color:var(--amber);"></i>
+            Trending
+          </div>
+          <div id="trending-list">
+            <div class="trending-skeleton"></div>
+            <div class="trending-skeleton"></div>
+            <div class="trending-skeleton"></div>
+          </div>
+        </div>
+
+        <!-- Suggested users -->
+        <div class="aside-card" id="suggested-card">
+          <div class="aside-title">
+            <i class="fa-solid fa-user-plus" style="color:var(--violet-light);"></i>
+            Suggestions
+          </div>
+          <div id="suggested-list">
+            <div class="trending-skeleton"></div>
+            <div class="trending-skeleton"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Comments Modal -->
+  <div class="modal-overlay" id="comments-modal" style="display:none;">
+    <div class="modal" style="max-width:540px;">
+      <div class="modal-header">
+        <div class="modal-title">Commentaires</div>
+        <div class="modal-close" onclick="closeComments()">
+          <i class="fa-solid fa-times"></i>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0;">
+        <div id="comments-list" style="max-height:360px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        </div>
+      </div>
+      <div class="modal-footer" style="gap:12px;">
+        <img id="comment-avatar" src="" alt="avatar" class="avatar avatar-sm">
+        <input type="text" class="form-input" id="comment-input" placeholder="Ajoute un commentaire..." style="flex:1;">
+        <button class="btn btn-primary btn-icon" id="comment-send">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+  /* ==================== MAIN ==================== */
+
+  let currentUserId = null;
+  let currentPostId = null;
+  let feedOffset    = 0;
+  const LIMIT       = 8;
+  let activeMood    = 'all';
+  let allPosts      = [];
+
+  (async () => {
+    const session = await Layout.init({ page: 'home' });
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    // Comment avatar
+    const profile = await Auth.getCurrentProfile();
+    const ca = document.getElementById('comment-avatar');
+    if (ca) ca.src = getAvatarUrl(profile);
+
+    await Promise.all([loadFeed(), loadTrending(), loadSuggested()]);
+  })();
+
+  /* ---------- FEED ---------- */
+
+  async function loadFeed(reset = true) {
+    if (reset) {
+      feedOffset = 0;
+      allPosts   = [];
+      document.getElementById('feed').innerHTML = getSkeletons(3);
+    }
+
+    try {
+      const posts = await DB.getFeedPosts(currentUserId, { limit: LIMIT, offset: feedOffset });
+      feedOffset += posts.length;
+
+      if (reset) allPosts = posts;
+      else allPosts = [...allPosts, ...posts];
+
+      renderFeed(activeMood === 'all' ? allPosts : allPosts.filter(p => p.mood === activeMood));
+
+      const lmw = document.getElementById('load-more-wrap');
+      lmw.style.display = posts.length >= LIMIT ? 'block' : 'none';
+    } catch (err) {
+      console.error('Feed error:', err);
+      document.getElementById('feed').innerHTML = '';
+      document.getElementById('feed-empty').style.display = 'flex';
+    }
+  }
+
+  function renderFeed(posts) {
+    const feed = document.getElementById('feed');
+    const empty = document.getElementById('feed-empty');
+
+    if (!posts.length) {
+      feed.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+
+    empty.style.display = 'none';
+    feed.innerHTML = posts.map((post, i) => renderPostCard(post, i)).join('');
+
+    // Bind actions
+    document.querySelectorAll('.post-like-btn').forEach(btn => {
+      btn.addEventListener('click', () => handleLike(btn));
+    });
+    document.querySelectorAll('.post-comment-btn').forEach(btn => {
+      btn.addEventListener('click', () => openComments(btn.dataset.postId));
+    });
+    document.querySelectorAll('.post-play-btn').forEach(btn => {
+      btn.addEventListener('click', () => handlePlay(btn));
+    });
+  }
+
+  function renderPostCard(post, index) {
+    const profile    = post.profile || {};
+    const likesCount = post.likes_count?.[0]?.count ?? 0;
+    const commCount  = post.comments_count?.[0]?.count ?? 0;
+    const isLiked    = post.is_liked === true;           // ← corrigé
+    const mood       = post.mood || 'dark';
+    const moodCfg    = getMoodConfig(mood);
+    const coverIdx   = index % 6;
+    const hasAudio   = post.audio_url && post.audio_url.trim() !== '';
+
+    return `
+    <article class="post-card" style="animation-delay:${index * 0.07}s;">
+      <div class="post-header">
+        <img src="${getAvatarUrl(profile)}" class="avatar avatar-md" alt="${profile.username}"
+             onclick="window.location.href='profile.html?id=${profile.id}'" style="cursor:pointer;">
+        <div class="post-user-info">
+          <a class="post-username" href="profile.html?id=${profile.id}">
+            ${profile.display_name || profile.username}
+          </a>
+          <div class="post-meta">
+            <span class="mood-badge mood-${mood}">
+              <i class="fa-solid ${moodCfg.icon}"></i> ${moodCfg.label}
+            </span>
+            <span class="post-time">${formatDate(post.created_at)}</span>
+          </div>
+        </div>
+        <button class="btn-ghost btn-icon" title="Options">
+          <i class="fa-solid fa-ellipsis"></i>
+        </button>
+      </div>
+
+      ${(post.song_title || post.cover_url) ? `
+      <div class="post-cover-wrap">
+        <img src="${getCoverUrl(post.cover_url, coverIdx)}" alt="cover" class="post-cover" loading="lazy">
+        <div class="post-cover-overlay">
+          <div class="post-song-info">
+            <div class="post-song-title">${post.song_title || ''}</div>
+            <div class="post-song-artist">${post.song_artist || ''}</div>
+          </div>
+          <div class="post-play-btn ${!hasAudio ? 'no-audio' : ''}"
+               data-title="${post.song_title || ''}"
+               data-artist="${post.song_artist || ''}"
+               data-cover="${getCoverUrl(post.cover_url, coverIdx)}"
+               data-audio="${post.audio_url || ''}">
+            <i class="fa-solid ${hasAudio ? 'fa-play' : 'fa-music'}"></i>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+
+      ${post.caption ? `
+      <div class="post-body">
+        <div class="post-caption">${escapeHtml(post.caption)}</div>
+      </div>
+      ` : ''}
+
+      <div class="post-footer">
+        <button class="post-action post-like-btn ${isLiked ? 'liked' : ''}"
+                data-post-id="${post.id}" data-liked="${isLiked}">
+          <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
+          <span class="like-count">${formatCount(likesCount)}</span>
+        </button>
+        <button class="post-action post-comment-btn" data-post-id="${post.id}">
+          <i class="fa-regular fa-comment"></i>
+          <span>${formatCount(commCount)}</span>
+        </button>
+        <button class="post-action" title="Partager">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+        <button class="post-action" title="Ajouter à playlist">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </article>`;
+  }
+
+  function getSkeletons(n) {
+    return Array(n).fill(0).map(() => `
+      <div class="post-card" style="padding:16px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+          <div class="skeleton" style="width:44px;height:44px;border-radius:50%;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div class="skeleton" style="height:14px;width:40%;margin-bottom:6px;"></div>
+            <div class="skeleton" style="height:11px;width:25%;"></div>
+          </div>
+        </div>
+        <div class="skeleton" style="width:100%;aspect-ratio:16/9;border-radius:12px;margin-bottom:12px;"></div>
+        <div class="skeleton" style="height:12px;width:80%;margin-bottom:4px;"></div>
+        <div class="skeleton" style="height:12px;width:60%;"></div>
+      </div>
+    `).join('');
+  }
+
+  /* ---------- LIKES ---------- */
+
+  async function handleLike(btn) {
+    const postId = btn.dataset.postId;
+    const liked  = btn.dataset.liked === 'true';
+    const icon   = btn.querySelector('i');
+    const count  = btn.querySelector('.like-count');
+    const cur    = parseInt(count.textContent) || 0;
+
+    // Optimistic UI
+    if (liked) {
+      btn.classList.remove('liked');
+      icon.className = 'fa-regular fa-heart';
+      count.textContent = Math.max(0, cur - 1);
+      btn.dataset.liked = 'false';
+    } else {
+      btn.classList.add('liked');
+      icon.className = 'fa-solid fa-heart';
+      count.textContent = cur + 1;
+      btn.dataset.liked = 'true';
+    }
+
+    try {
+      if (liked) await DB.unlikePost(postId, currentUserId);
+      else        await DB.likePost(postId, currentUserId);
+    } catch (err) {
+      // Revert
+      if (liked) {
+        btn.classList.add('liked');
+        icon.className = 'fa-solid fa-heart';
+        count.textContent = cur;
+        btn.dataset.liked = 'true';
+      } else {
+        btn.classList.remove('liked');
+        icon.className = 'fa-regular fa-heart';
+        count.textContent = cur;
+        btn.dataset.liked = 'false';
+      }
+      Toast.error('Erreur lors du like.');
+    }
+  }
+
+  /* ---------- COMMENTS ---------- */
+
+  async function openComments(postId) {
+    currentPostId = postId;
+    const modal = document.getElementById('comments-modal');
+    modal.style.display = 'flex';
+    document.getElementById('comments-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);">Chargement...</div>';
+
+    try {
+      const comments = await DB.getComments(postId);
+      renderComments(comments);
+    } catch (err) {
+      Toast.error('Impossible de charger les commentaires.');
+    }
+  }
+
+  function renderComments(comments) {
+    const list = document.getElementById('comments-list');
+    if (!comments.length) {
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);">Sois le premier à commenter !</div>';
+      return;
+    }
+    list.innerHTML = comments.map(c => `
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <img src="${getAvatarUrl(c.profile)}" class="avatar avatar-sm" alt="${c.profile?.username}">
+        <div>
+          <div style="font-weight:600;font-size:13px;">
+            ${c.profile?.display_name || c.profile?.username || 'Utilisateur'}
+            <span style="font-weight:400;color:var(--text-muted);font-size:11px;margin-left:6px;">
+              ${formatDate(c.created_at)}
+            </span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(c.content)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function closeComments() {
+    document.getElementById('comments-modal').style.display = 'none';
+    currentPostId = null;
+  }
+
+  document.getElementById('comment-send')?.addEventListener('click', sendComment);
+  document.getElementById('comment-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendComment();
+  });
+
+  async function sendComment() {
+    const input = document.getElementById('comment-input');
+    const content = input.value.trim();
+    if (!content || !currentPostId) return;
+
+    input.value = '';
+    try {
+      const comment = await DB.addComment(currentPostId, currentUserId, content);
+      const list = document.getElementById('comments-list');
+      const existing = list.querySelector('[style*="text-align:center"]');
+      if (existing) existing.remove();
+
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
+      div.innerHTML = `
+        <img src="${getAvatarUrl(comment.profile)}" class="avatar avatar-sm">
+        <div>
+          <div style="font-weight:600;font-size:13px;">
+            ${comment.profile?.display_name || comment.profile?.username}
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(content)}</div>
+        </div>`;
+      list.appendChild(div);
+      list.scrollTop = list.scrollHeight;
+    } catch (err) {
+      Toast.error('Impossible d\'envoyer le commentaire.');
+    }
+  }
+
+  /* ---------- PLAY ---------- */
+
+  function handlePlay(btn) {
+    const audioUrl = btn.dataset.audio || '';
+    if (!audioUrl) {
+      Toast.info('Aucun fichier audio — uploade un MP3 dans le post.');
+      return;
+    }
+    Player.load({
+      title:    btn.dataset.title,
+      artist:   btn.dataset.artist,
+      coverUrl: btn.dataset.cover,
+      audioUrl: audioUrl,
+    });
+  }
+
+  /* ---------- MOOD FILTER ---------- */
+
+  document.querySelectorAll('.mood-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.mood-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeMood = pill.dataset.mood;
+      renderFeed(activeMood === 'all' ? allPosts : allPosts.filter(p => p.mood === activeMood));
+    });
+  });
+
+  /* ---------- LOAD MORE ---------- */
+
+  document.getElementById('load-more-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('load-more-btn');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Chargement...';
+    await loadFeed(false);
+    btn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Voir plus';
+  });
+
+  /* ---------- TRENDING ---------- */
+
+  async function loadTrending() {
+    const DEMO = [
+      { title: 'Levitating', artist: 'Dua Lipa', plays: 12800 },
+      { title: 'Blinding Lights', artist: 'The Weeknd', plays: 9400 },
+      { title: 'MONTERO', artist: 'Lil Nas X', plays: 7200 },
+      { title: 'Stay', artist: 'Kid LAROI & Bieber', plays: 6100 },
+      { title: 'Peaches', artist: 'Justin Bieber', plays: 4800 },
+    ];
+    const list = document.getElementById('trending-list');
+    list.innerHTML = DEMO.map((t, i) => `
+      <div class="trending-item" onclick="Player.load({title:'${t.title}',artist:'${t.artist}'})">
+        <div class="trending-rank">${i + 1}</div>
+        <div class="trending-info">
+          <div class="trending-title">${t.title}</div>
+          <div class="trending-artist">${t.artist}</div>
+        </div>
+        <div class="trending-plays">${formatCount(t.plays)}</div>
+      </div>
+    `).join('');
+  }
+
+  /* ---------- SUGGESTED ---------- */
+
+  async function loadSuggested() {
+    try {
+      const users = await DB.searchUsers('', { limit: 4 });
+      const me    = currentUserId;
+      const list  = document.getElementById('suggested-list');
+      const filtered = users.filter(u => u.id !== me).slice(0, 3);
+      if (!filtered.length) {
+        document.getElementById('suggested-card').style.display = 'none';
+        return;
+      }
+      list.innerHTML = filtered.map(u => `
+        <div class="suggested-item">
+          <img src="${getAvatarUrl(u)}" class="avatar avatar-sm" alt="${u.username}"
+               onclick="window.location.href='profile.html?id=${u.id}'" style="cursor:pointer;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13px;cursor:pointer;"
+                 onclick="window.location.href='profile.html?id=${u.id}'">
+              ${u.display_name || u.username}
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);">@${u.username}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="handleFollow(this,'${u.id}')">
+            Suivre
+          </button>
+        </div>
+      `).join('');
+    } catch { /* demo */ }
+  }
+
+  async function handleFollow(btn, userId) {
+    try {
+      await DB.followUser(currentUserId, userId);
+      btn.textContent = 'Suivi ✓';
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+    } catch (err) {
+      Toast.error('Erreur lors du follow.');
+    }
+  }
+
+  /* ---------- HELPERS ---------- */
+
+  function escapeHtml(s) {
+    return s?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '';
+  }
+
+  // Close modal on overlay click
+  document.getElementById('comments-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeComments();
+  });
+  </script>
+</body>
+</html>
